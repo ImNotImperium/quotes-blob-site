@@ -1,0 +1,31 @@
+name: Deploy site to Azure Blob Static Website
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "site/**"
+      - ".github/workflows/deploy-site.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Debug account name
+        run: |
+          echo "Account: ${{ secrets.AZURE_STORAGE_ACCOUNT }}"
+
+
+      # Upload everything in /site to the $web container
+      - name: Upload to $web
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az storage blob upload-batch \
+              --account-name "${{ secrets.AZURE_STORAGE_ACCOUNT }}" \
+              --sas-token "${{ secrets.AZURE_STORAGE_SAS_TOKEN }}" \
+              --destination '$web' \
+              --source site \
+              --overwrite true
+ 
