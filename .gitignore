@@ -1,0 +1,92 @@
+# ----------------------------
+# OS / Editor
+# ----------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.vs
+edge
+
+# ----------------------------
+# Build output (general)
+# ----------------------------
+bin/
+**/bin/
+obj/
+**/obj/
+dist/
+**/dist/
+Publish/
+**/Publish/
+
+# ----------------------------
+# Visual Studio / .NET artifacts 
+# ----------------------------
+*.user
+*.suo
+*.cscfg
+*.Cache
+project.lock.json
+
+/packages/
+TestResults/
+
+# ----------------------------
+# Azure Functions / Azure local settings + secrets
+# ----------------------------
+local.settings.json
+**/local.settings.json
+appsettings.json
+**/appsettings.json
+
+secrets/
+**/secrets/
+.secrets
+**/.secrets
+
+# Local data folder for dev (optional)
+data/
+**/data/
+
+# ----------------------------
+# Node (repo-root layout)
+# ----------------------------
+node_modules/
+**/node_modules/
+api/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Azure Functions Core Tools local folder (common)
+.func/
+**/.func/
+
+# ----------------------------
+# Python 
+# ----------------------------
+.python_packages/
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ----------------------------
+# Azurite artifacts (local storage emulator)
+# ----------------------------
+__blobstorage__/
+__queuestorage__/
+__azurite_db*__.json
+
+# ----------------------------
+# OPTIONAL: Allow Modules folder exception 
+# ----------------------------
+!Modules/**
