@@ -16,6 +16,37 @@ button { padding: 10px 14px; font-size: 16px; cursor: pointer; }
 <button id="btn">Get a quote</button>
 <div id="quote">Click the button to fetch a quote.</div>
 <div class="muted" id="status"></div>
+<section class="card"> 
+
+  <h2>Sentence Case Formatter</h2> 
+
+ 
+
+  <label for="fileInput">Upload a .txt file</label><br /> 
+
+  <input id="fileInput" type="file" accept=".txt,text/plain" /> 
+
+ 
+
+  <div style="margin-top: 12px;"> 
+
+    <button id="btnFormat" disabled>Convert to Sentence Case</button> 
+
+    <button id="btnCopy" disabled>Copy Output</button> 
+
+  </div> 
+
+ 
+
+  <p id="formatStatus" style="margin-top: 12px;"></p> 
+
+ 
+
+  <h3>Output</h3> 
+
+  <textarea id="output" rows="10" style="width: 100%;" readonly></textarea> 
+
+</section> 
 
 <script src="app.js"></script>
 </body>
