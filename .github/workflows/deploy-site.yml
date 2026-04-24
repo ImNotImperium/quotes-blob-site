@@ -14,14 +14,13 @@ jobs:
       HAS_STORAGE: ${{ secrets.AZURE_STORAGE_ACCOUNT != '' && secrets.AZURE_STORAGE_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
-      - name: Create public site container if missing
+      - name: Create site container if missing
         if: env.HAS_STORAGE == 'true'
         run: |
           az storage container create \
             --name site \
             --account-name "$STORAGE_ACCOUNT" \
-            --account-key "$STORAGE_KEY" \
-            --public-access blob 2>/dev/null || true
+            --account-key "$STORAGE_KEY" && echo "Container ready" || echo "Container already exists or creation skipped"
         env:
           STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
           STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
@@ -29,6 +28,8 @@ jobs:
         if: env.HAS_STORAGE == 'true'
         run: |
           set -euo pipefail
+          echo "Uploading from: $GITHUB_WORKSPACE/site"
+          ls "$GITHUB_WORKSPACE/site"
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
             --account-key "$STORAGE_KEY" \
