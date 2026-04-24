@@ -1,10 +1,11 @@
 const { createElement: h, useMemo, useRef, useState } = React;
 
+const DEFAULT_PROD_API_BASE_URL = "https://quotesappra1064-cweubscvg5gmhne7.francecentral-01.azurewebsites.net";
 const API_BASE_URL =
   window.FILE_CONVERTER_API_BASE_URL ||
   (["localhost", "127.0.0.1", "0.0.0.0"].includes(window.location.hostname)
     ? "http://localhost:7071"
-    : "");
+    : DEFAULT_PROD_API_BASE_URL);
 const MAX_BYTES = 10 * 1024 * 1024;
 
 function App() {
