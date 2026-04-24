@@ -57,12 +57,13 @@ jobs:
         run: npm prune --production
       - name: Deploy Azure Functions app
         if: env.HAS_PUBLISH_PROFILE == 'true'
-        uses: Azure/functions-action@v1
+        uses: Azure/functions-action@v2
         with:
           app-name: ${{ secrets.AZURE_FUNCTIONAPP_NAME || 'quotesappra1064-cweubscvg5gmhne7' }}
           package: api
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
           respect-funcignore: true
+          scm-do-build-during-deployment: false
 
   deploy-site:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -72,6 +73,18 @@ jobs:
       HAS_STORAGE: ${{ secrets.AZURE_STORAGE_ACCOUNT != '' && secrets.AZURE_STORAGE_SAS_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Ensure $web container exists
+        if: env.HAS_STORAGE == 'true'
+        run: |
+          CLEAN_SAS="${SAS_TOKEN#?}"
+          az storage container create \
+            --name '$web' \
+            --account-name "$STORAGE_ACCOUNT" \
+            --sas-token "$CLEAN_SAS" \
+            --public-access blob 2>/dev/null || true
+        env:
+          STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+          SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN }}
       - name: Upload static site to Azure Blob $web
         if: env.HAS_STORAGE == 'true'
         run: |
