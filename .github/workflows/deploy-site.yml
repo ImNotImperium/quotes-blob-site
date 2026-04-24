@@ -9,17 +9,14 @@ on:
 
 jobs:
   deploy:
-    if: secrets.AZURE_STORAGE_ACCOUNT != '' && secrets.AZURE_STORAGE_SAS_TOKEN != ''
     runs-on: ubuntu-latest
+    env:
+      HAS_STORAGE: ${{ secrets.AZURE_STORAGE_ACCOUNT != '' && secrets.AZURE_STORAGE_SAS_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
-      - name: Debug account name
-        run: |
-          echo "Account: ${{ secrets.AZURE_STORAGE_ACCOUNT }}"
-
-
       # Upload everything in /site to the $web container
       - name: Upload to $web
+        if: env.HAS_STORAGE == 'true'
         uses: azure/CLI@v2
         with:
           inlineScript: |
