@@ -1,24 +1,32 @@
 {
-  "name": "",
+  "name": "cloud-file-converter-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "dist/src/functions/*.js",
+  "description": "Serverless file conversion API with router-based converter delegation",
+  "main": "dist/functions/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
     "clean": "rimraf dist",
     "prestart": "npm run clean && npm run build",
     "start": "func start",
-    "test": "echo \"No tests yet...\""
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@azure/functions": "^4.0.0",
-    "@azure/storage-blob": "^12.31.0"
+    "@azure/storage-blob": "^12.31.0",
+    "@azure/storage-queue": "^12.28.0",
+    "csv-parse": "^5.5.6",
+    "exceljs": "^4.4.0",
+    "winston": "^3.18.3"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
     "@types/node": "18.x",
     "azure-functions-core-tools": "^4.x",
+    "jest": "^29.7.0",
     "rimraf": "^5.0.0",
+    "ts-jest": "^29.2.5",
     "typescript": "^5.0.0"
   }
 }

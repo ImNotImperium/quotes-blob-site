@@ -1,21 +1,13 @@
-{ 
-
-  "compilerOptions": { 
-
-    "target": "ES2022", 
-
-    "module": "commonjs", 
-
-    "rootDir": "src", 
-
-    "outDir": "dist", 
-
-    "strict": true, 
-
-    "esModuleInterop": true, 
-
-    "types": ["node"] 
-
-  } 
-
-} 
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "rootDir": "src",
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "__tests__", "jest.config.ts"]
+}

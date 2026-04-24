@@ -1,109 +1,204 @@
-// Replace this with your Function App base URL after you deploy the function.
-// Example: https://quotesapp-abcdefg.azurewebsites.net
-const FUNCTION_BASE_URL = "https://quotesappra1064-cweubscvg5gmhne7.francecentral-01.azurewebsites.net";
+const { createElement: h, useMemo, useRef, useState } = React;
 
-const btn = document.getElementById("btn");
-const quoteEl = document.getElementById("quote");
-const statusEl = document.getElementById("status");
+const API_BASE_URL =
+  window.FILE_CONVERTER_API_BASE_URL ||
+  (["localhost", "127.0.0.1", "0.0.0.0"].includes(window.location.hostname)
+    ? "http://localhost:7071"
+    : "");
+const MAX_BYTES = 10 * 1024 * 1024;
 
-if (btn && quoteEl && statusEl) {
-  btn.addEventListener("click", async () => {
-    statusEl.textContent = "Fetching...";
-    btn.disabled = true;
+function App() {
+  const [file, setFile] = useState(null);
+  const [status, setStatus] = useState("Drop a CSV file or browse to upload.");
+  const [error, setError] = useState("");
+  const [jobId, setJobId] = useState("");
+  const [downloadUrl, setDownloadUrl] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRef = useRef(null);
+
+  const fileMeta = useMemo(() => {
+    if (!file) return "No file selected yet.";
+    return `${file.name} - ${Math.round(file.size / 1024)} KB`;
+  }, [file]);
+
+  const onPickClick = () => inputRef.current?.click();
+
+  const onFileChosen = (nextFile) => {
+    setDownloadUrl("");
+    setJobId("");
+    setError("");
+
+    if (!nextFile) {
+      setFile(null);
+      setStatus("No file selected.");
+      return;
+    }
+
+    const extOk = nextFile.name.toLowerCase().endsWith(".csv");
+    if (!extOk) {
+      setFile(null);
+      setError("Only .csv files are supported in this boilerplate.");
+      return;
+    }
+
+    if (nextFile.size > MAX_BYTES) {
+      setFile(null);
+      setError("File exceeds the 10MB upload limit.");
+      return;
+    }
+
+    setFile(nextFile);
+    setStatus("Ready to convert.");
+  };
+
+  const onSubmit = async () => {
+    if (!file || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setError("");
+    setDownloadUrl("");
+    setStatus("Encoding file and sending conversion request...");
 
     try {
-      const res = await fetch(`${FUNCTION_BASE_URL}/api/quote`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await file.arrayBuffer();
+      const bytes = new Uint8Array(data);
 
-      const data = await res.json();
-      quoteEl.textContent = data.quote ?? "No quote returned.";
-      statusEl.textContent = "";
-    } catch (err) {
-      quoteEl.textContent = "Could not fetch a quote.";
-      statusEl.textContent = String(err);
-    } finally {
-      btn.disabled = false;
-    }
-  });
-}
-
-const fileInput = document.getElementById("fileInput");
-const btnFormat = document.getElementById("btnFormat");
-const btnCopy = document.getElementById("btnCopy");
-const outputEl = document.getElementById("output");
-
-let selectedFile = null;
-
-if (fileInput && btnFormat && btnCopy && statusEl && outputEl) {
-  fileInput.addEventListener("change", () => {
-    selectedFile = fileInput.files?.[0] ?? null;
-    outputEl.value = "";
-    btnCopy.disabled = true;
-
-    if (!selectedFile) {
-      btnFormat.disabled = true;
-      statusEl.textContent = "";
-      return;
-    }
-
-    // Basic validation
-    const nameOk = selectedFile.name.toLowerCase().endsWith(".txt");
-    const typeOk = (selectedFile.type || "").startsWith("text/");
-    const isText = nameOk || typeOk;
-    const maxBytes = 200 * 1024; // 200KB for a demo
-
-    if (!isText) {
-      btnFormat.disabled = true;
-      statusEl.textContent = "Please select a plain text (.txt) file.";
-      selectedFile = null;
-      return;
-    }
-
-    if (selectedFile.size > maxBytes) {
-      btnFormat.disabled = true;
-      statusEl.textContent = "File is too large for this demo (max 200KB).";
-      selectedFile = null;
-      return;
-    }
-
-    btnFormat.disabled = false;
-    statusEl.textContent = `Selected: ${selectedFile.name} (${selectedFile.size} bytes)`;
-  });
-
-  btnFormat.addEventListener("click", async () => {
-    if (!selectedFile) return;
-
-    btnFormat.disabled = true;
-    statusEl.textContent = "Sending text to the API...";
-
-    try {
-      const text = await selectedFile.text();
-
-      const res = await fetch("/api/sentencecase", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`API error (${res.status}): ${errText}`);
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        const slice = bytes.subarray(i, i + chunk);
+        binary += String.fromCharCode(...slice);
       }
 
-      const data = await res.json();
-      outputEl.value = data.result ?? "";
-      btnCopy.disabled = outputEl.value.length === 0;
+      const payload = {
+        fileName: file.name,
+        mimeType: file.type || "text/csv",
+        contentBase64: btoa(binary)
+      };
 
-      statusEl.textContent = "Done.";
-    } catch (err) {
-      statusEl.textContent = `Failed: ${err.message}`;
+      const response = await fetch(`${API_BASE_URL}/api/convert`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const body = await safeReadJson(response);
+      if (!response.ok) {
+        throw new Error(body?.error || body?.rawText || `Conversion failed with status ${response.status}`);
+      }
+
+      if (body.downloadUrl) {
+        setDownloadUrl(body.downloadUrl);
+        setStatus("Conversion completed successfully.");
+        return;
+      }
+
+      if (body.jobId) {
+        setJobId(body.jobId);
+        setStatus("Job accepted. Polling for completion...");
+        await pollStatus(body.jobId, setStatus, setDownloadUrl);
+        return;
+      }
+
+      throw new Error("Unexpected API response shape.");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Unexpected upload error.");
     } finally {
-      btnFormat.disabled = !selectedFile;
+      setIsSubmitting(false);
     }
-  });
+  };
 
-  btnCopy.addEventListener("click", async () => {
-    await navigator.clipboard.writeText(outputEl.value);
-    statusEl.textContent = "Copied output to clipboard.";
-  });
+  return h("section", { className: "panel" }, [
+    h("h1", { key: "title", className: "title" }, "Cloud-Native File Converter"),
+    h(
+      "p",
+      { key: "subtitle", className: "subtitle" },
+      "Upload CSV files, convert them with serverless functions, and retrieve downloadable results from cloud storage."
+    ),
+    h(
+      "div",
+      {
+        key: "dropzone",
+        className: "dropzone",
+        onDragOver: (event) => event.preventDefault(),
+        onDrop: (event) => {
+          event.preventDefault();
+          onFileChosen(event.dataTransfer.files?.[0] || null);
+        }
+      },
+      [
+        h("strong", { key: "dz-title" }, "Drop CSV Here"),
+        h("p", { key: "dz-sub", className: "meta" }, "Supported: .csv up to 10MB"),
+        h("input", {
+          key: "file-input",
+          ref: inputRef,
+          type: "file",
+          accept: ".csv,text/csv",
+          style: { display: "none" },
+          onChange: (event) => onFileChosen(event.target.files?.[0] || null)
+        }),
+        h("div", { key: "controls", className: "controls" }, [
+          h("button", { key: "pick", className: "secondary", type: "button", onClick: onPickClick }, "Choose File"),
+          h(
+            "button",
+            { key: "convert", type: "button", disabled: !file || isSubmitting, onClick: onSubmit },
+            isSubmitting ? "Converting..." : "Convert to XLSX"
+          )
+        ])
+      ]
+    ),
+    h("div", { key: "meta", className: "meta" }, fileMeta),
+    h("div", { key: "status", className: `status${error ? " error" : ""}` }, error || status),
+    jobId ? h("div", { key: "job", className: "status" }, `Job ID: ${jobId}`) : null,
+    downloadUrl
+      ? h(
+          "a",
+          { key: "download", className: "download", href: downloadUrl, target: "_blank", rel: "noreferrer" },
+          "Download converted file"
+        )
+      : null
+  ]);
+}
+
+async function pollStatus(jobId, setStatus, setDownloadUrl) {
+  const maxAttempts = 30;
+  for (let i = 1; i <= maxAttempts; i += 1) {
+    const response = await fetch(`${API_BASE_URL}/api/status/${jobId}`);
+    const body = await safeReadJson(response);
+
+    if (!response.ok) {
+      throw new Error(body?.error || body?.rawText || "Failed to retrieve job status.");
+    }
+
+    setStatus(`Job ${body.state}. Poll attempt ${i}/${maxAttempts}.`);
+
+    if (body.state === "completed") {
+      setDownloadUrl(body.downloadUrl);
+      setStatus("Conversion completed successfully.");
+      return;
+    }
+
+    if (body.state === "failed") {
+      throw new Error(body.error || "The conversion job failed.");
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
+  throw new Error("Timed out waiting for conversion to finish.");
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+
+async function safeReadJson(response) {
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { rawText: text };
+  }
 }

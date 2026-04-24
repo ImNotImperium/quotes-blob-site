@@ -1,2 +1,3 @@
-import "./functions/quote";
-import "./functions/sentencecase"; 
+import "./convert";
+import "./status";
+import "./processConversionJob";
