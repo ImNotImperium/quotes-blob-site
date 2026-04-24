@@ -74,19 +74,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Upload static site to Azure Blob $web
         if: env.HAS_STORAGE == 'true'
-        uses: azure/CLI@v2
+        run: |
+          set -euo pipefail
+          CLEAN_SAS="${SAS_TOKEN#?}"
+          az storage blob upload-batch \
+            --account-name "$STORAGE_ACCOUNT" \
+            --sas-token "$CLEAN_SAS" \
+            --destination '$web' \
+            --source site \
+            --overwrite true \
+            --output table
         env:
           STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
           SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN }}
-        with:
-          inlineScript: |
-            set -euo pipefail
-            # Strip leading ? from SAS token if present
-            CLEAN_SAS="${SAS_TOKEN#\?}"
-            az storage blob upload-batch \
-              --account-name "$STORAGE_ACCOUNT" \
-              --sas-token "$CLEAN_SAS" \
-              --destination '$web' \
-              --source site \
-              --overwrite true \
-              --output table
