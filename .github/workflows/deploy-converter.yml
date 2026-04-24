@@ -57,7 +57,7 @@ jobs:
         run: npm prune --production
       - name: Deploy Azure Functions app
         if: env.HAS_PUBLISH_PROFILE == 'true'
-        uses: Azure/functions-action@v2
+        uses: Azure/functions-action@v1
         with:
           app-name: ${{ secrets.AZURE_FUNCTIONAPP_NAME || 'quotesappra1064-cweubscvg5gmhne7' }}
           package: api
