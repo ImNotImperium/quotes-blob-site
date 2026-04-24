@@ -11,34 +11,32 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      HAS_STORAGE: ${{ secrets.AZURE_STORAGE_ACCOUNT != '' && secrets.AZURE_STORAGE_SAS_TOKEN != '' }}
+      HAS_STORAGE: ${{ secrets.AZURE_STORAGE_ACCOUNT != '' && secrets.AZURE_STORAGE_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
-      - name: Ensure $web container exists
+      - name: Create public site container if missing
         if: env.HAS_STORAGE == 'true'
         run: |
-          CLEAN_SAS="${SAS_TOKEN#?}"
           az storage container create \
-            --name '$web' \
+            --name site \
             --account-name "$STORAGE_ACCOUNT" \
-            --sas-token "$CLEAN_SAS" \
+            --account-key "$STORAGE_KEY" \
             --public-access blob 2>/dev/null || true
         env:
           STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
-          SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN }}
-      - name: Upload to $web
+          STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
+      - name: Upload to site container
         if: env.HAS_STORAGE == 'true'
         run: |
           set -euo pipefail
-          CLEAN_SAS="${SAS_TOKEN#?}"
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
-            --sas-token "$CLEAN_SAS" \
-            --destination '$web' \
+            --account-key "$STORAGE_KEY" \
+            --destination site \
             --source site \
             --overwrite true \
             --output table
         env:
           STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
-          SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN }}
+          STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
  
