@@ -33,7 +33,7 @@ jobs:
             --account-name "$STORAGE_ACCOUNT" \
             --account-key "$STORAGE_KEY" \
             --destination site \
-            --source site \
+            --source "$GITHUB_WORKSPACE/site" \
             --overwrite true \
             --output table
         env:
