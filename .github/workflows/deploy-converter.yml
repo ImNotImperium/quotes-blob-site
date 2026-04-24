@@ -51,6 +51,10 @@ jobs:
       - name: Build
         working-directory: api
         run: npm run build
+      - name: Prune dev dependencies before deploy
+        if: env.HAS_PUBLISH_PROFILE == 'true'
+        working-directory: api
+        run: npm prune --production
       - name: Deploy Azure Functions app
         if: env.HAS_PUBLISH_PROFILE == 'true'
         uses: Azure/functions-action@v1
@@ -58,6 +62,7 @@ jobs:
           app-name: ${{ secrets.AZURE_FUNCTIONAPP_NAME || 'quotesappra1064-cweubscvg5gmhne7' }}
           package: api
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          respect-funcignore: true
 
   deploy-site:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -70,11 +75,18 @@ jobs:
       - name: Upload static site to Azure Blob $web
         if: env.HAS_STORAGE == 'true'
         uses: azure/CLI@v2
+        env:
+          STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+          SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN }}
         with:
           inlineScript: |
+            set -euo pipefail
+            # Strip leading ? from SAS token if present
+            CLEAN_SAS="${SAS_TOKEN#\?}"
             az storage blob upload-batch \
-              --account-name "${{ secrets.AZURE_STORAGE_ACCOUNT }}" \
-              --sas-token "${{ secrets.AZURE_STORAGE_SAS_TOKEN }}" \
+              --account-name "$STORAGE_ACCOUNT" \
+              --sas-token "$CLEAN_SAS" \
               --destination '$web' \
               --source site \
-              --overwrite true
+              --overwrite true \
+              --output table
