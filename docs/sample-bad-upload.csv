@@ -1,4 +1,4 @@
-name,department,score
-"Ava,Engineering,92
-Noah,Design,85
-Mia,Finance,"oops"
+order_id,customer,product,quantity,unit_price
+2001,"Broken, Name,Widget,5,9.99
+2002,Carol White,"Unterminated quote,3,14.99
+2003,Dan"Quote"Middle,Gadget,"two",7.50

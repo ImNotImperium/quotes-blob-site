@@ -116,6 +116,12 @@ function App() {
       { key: "subtitle", className: "subtitle" },
       "Upload CSV files, convert them with serverless functions, and retrieve downloadable results from cloud storage."
     ),
+    h("p", { key: "samples", className: "samples" }, [
+      "Try a sample: ",
+      h("a", { key: "s1", href: "sample-upload.csv", download: true }, "sample-upload.csv"),
+      " · ",
+      h("a", { key: "s2", href: "sample-bad-upload.csv", download: true, className: "bad" }, "sample-bad-upload.csv (malformed)")
+    ]),
     h(
       "div",
       {

@@ -87,6 +87,11 @@ resource "azurerm_linux_function_app" "api" {
     application_stack {
       node_version = "20"
     }
+
+    cors {
+      allowed_origins     = ["https://imnotimperium.github.io"]
+      support_credentials = false
+    }
   }
 
   app_settings = {
